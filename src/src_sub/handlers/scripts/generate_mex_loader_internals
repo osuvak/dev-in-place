@@ -1,0 +1,294 @@
+#!/usr/bin/perl
+
+# /*
+#  * This file is part of the "dev_in_place" repository located at:
+#  * https://github.com/osuvak/dev_in_place
+#  * 
+#  * Copyright (C) 2017  Onder Suvak
+#  * 
+#  * For licensing information check the above url.
+#  * Please do not remove this header.
+#  * */
+
+use warnings;
+use strict;
+use Cwd qw();
+use File::Basename;
+ 
+# record home path
+my $homePath = Cwd::cwd();
+
+# change current directory or not
+my $wdir = '.';
+# if ( $#ARGV+1 >= 1 ) {
+#   $wdir = $ARGV[0];
+# }
+
+# current folder manip
+chdir($wdir) or die "No such directory as \"$wdir\".\n";
+my $path = Cwd::cwd();
+print "pwd : $path\n";
+
+# command line arg
+my
+  (
+    $path_target ,
+    $target_basename ,
+    $ext_mex ,
+    @args_other
+  ) = @ARGV;
+
+# check directory
+my $path_reserved_mex = '_reserved_mex_'.$target_basename;
+if ( 
+      (-e $path_reserved_mex) 
+   && 
+      (-d $path_reserved_mex) 
+   )
+{
+}
+else
+{
+  die "Directory \'$path_reserved_mex\' does not exist.\n";
+}
+
+# check if necessary files exist (do not check contents)
+my $flag_missing = 0;
+if ( 
+       (-e $path_reserved_mex.'/'.'mex_loader.hpp') 
+   && 
+      !(-d $path_reserved_mex.'/'.'mex_loader.hpp') 
+   )
+{
+}
+else
+{
+  $flag_missing = 1;
+}
+if ( 
+       (-e $path_reserved_mex.'/'.'mex_loader.cpp') 
+   && 
+      !(-d $path_reserved_mex.'/'.'mex_loader.cpp') 
+   )
+{
+}
+else
+{
+  $flag_missing = 1;
+}
+if ( 
+       (-e $path_reserved_mex.'/'.'mex_main.cpp') 
+   && 
+      !(-d $path_reserved_mex.'/'.'mex_main.cpp') 
+   )
+{
+}
+else
+{
+  $flag_missing = 1;
+}
+
+if ( $flag_missing )
+{
+my $internals_mex_main_cpp = <<"END_MESSAGE";
+#include "mex.h"
+#include "_reserved_mex_$target_basename/mex_loader.hpp"
+#include <iostream>
+
+void mexFunction
+(
+        int        nlhs,
+        mxArray  * plhs[],
+        int        nrhs,
+  const mxArray  * prhs[]
+)
+{
+  using namespace mex_loaders;
+  
+  entryfunc_t base_get_gMexEntry = MEX_Loader_Base<MEX_Loader_$target_basename>::base_get_gMexEntry();
+  bool        flag_loadedLib     = MEX_Loader_Base<MEX_Loader_$target_basename>::base_get_flag_loadedLib();
+  bool        flag_loadedSymbol  = MEX_Loader_Base<MEX_Loader_$target_basename>::base_get_flag_loadedSymbol();
+  
+  if ( !base_get_gMexEntry ) {
+    
+    if ( !flag_loadedLib )
+      std::cout << "Library could not be loaded." << std::endl;
+    
+    if ( !flag_loadedSymbol )
+      std::cout << "Symbol could not be loaded." << std::endl;
+    
+    mexErrMsgTxt("Library or symbol could not be loaded during instantiation.\\n");
+  }
+  else {
+    base_get_gMexEntry(nlhs, plhs, nrhs, prhs);
+  }
+}
+END_MESSAGE
+
+open ( FILE , ">$path_reserved_mex/mex_main.cpp" );
+print FILE $internals_mex_main_cpp;
+close( FILE );
+
+my $internals_mex_loader_cpp = <<"END_MESSAGE";
+#include "_reserved_mex_${target_basename}/mex_loader.hpp"
+
+namespace mex_loaders
+{
+  
+MEX_Loader_${target_basename} :: LibLoader MEX_Loader_${target_basename} :: obj;
+  
+}
+END_MESSAGE
+
+open ( FILE , ">$path_reserved_mex/mex_loader.cpp" );
+print FILE $internals_mex_loader_cpp;
+close( FILE );
+
+my $target_basename_uc = uc($target_basename);
+
+my $internals_mex_loader_hpp = <<"END_MESSAGE";
+#ifndef MEX_LOADER_${target_basename_uc}_HPP_
+#define MEX_LOADER_${target_basename_uc}_HPP_
+
+#include "DLayerMEX_inc/mex_loader_base.hpp"
+
+namespace mex_loaders
+{
+  
+class MEX_Loader_${target_basename}
+: 
+public MEX_Loader_Base<MEX_Loader_${target_basename}>
+{
+public:
+  class LibLoader
+  {
+  public:
+    LibLoader()
+    {
+      class_name_ = "MEX_Loader_${target_basename}";
+      lib_path_   = "${path_target}";
+      lib_name_   = "${target_basename}_Loaded.${ext_mex}";
+      MEX_Loader_Base::LibLoader_constructor();
+    }
+    
+    ~LibLoader()
+    {
+      MEX_Loader_Base::LibLoader_destructor();
+    }
+  };
+  
+  static
+  const char * 
+  get_class_name()
+  {
+    return class_name_.c_str();
+  }
+  
+  static
+  const char * 
+  get_PATH_LOADED_MEX()
+  {
+    return lib_path_.c_str();
+  }
+  
+  static
+  const char * 
+  get_NAME_LOADED_MEX()
+  {
+    return lib_name_.c_str();
+  }
+  
+  static
+  void
+  set_gMexEntry
+  (entryfunc_t e)
+  {
+    gMexEntry_ = e;
+  }
+  
+  static
+  entryfunc_t
+  get_gMexEntry
+  ()
+  {
+    return gMexEntry_;
+  }
+  
+  static
+  void
+  set_fh
+  (void *fh)
+  {
+    fh_ = fh;
+  }
+  
+  static
+  void *
+  get_fh()
+  {
+    return fh_;
+  }
+  
+  static
+  void
+  set_p
+  (void *p)
+  {
+    p_ = p;
+  }
+  
+  static
+  void *
+  get_p
+  ()
+  {
+    return p_;
+  }
+  
+  static
+  void
+  set_flag_loadedLib
+  (bool flag)
+  {
+    flag_loadedLib_ = flag;
+  }
+  
+  static
+  bool
+  get_flag_loadedLib()
+  {
+    return flag_loadedLib_;
+  }
+  
+  static
+  void
+  set_flag_loadedSymbol
+  (bool flag)
+  {
+    flag_loadedSymbol_ = flag;
+  }
+  
+  static
+  bool
+  get_flag_loadedSymbol()
+  {
+    return flag_loadedSymbol_;
+  }
+    
+private:
+  static LibLoader obj;
+};
+
+}
+
+#endif
+END_MESSAGE
+
+open ( FILE , ">$path_reserved_mex/mex_loader.hpp" );
+print FILE $internals_mex_loader_hpp;
+close( FILE );
+}
+else
+{
+# do nothing
+}

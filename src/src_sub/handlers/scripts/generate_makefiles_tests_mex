@@ -1,0 +1,216 @@
+#!/usr/bin/perl
+
+# /*
+#  * This file is part of the "dev_in_place" repository located at:
+#  * https://github.com/osuvak/dev_in_place
+#  * 
+#  * Copyright (C) 2017  Onder Suvak
+#  * 
+#  * For licensing information check the above url.
+#  * Please do not remove this header.
+#  * */
+
+use warnings;
+use strict;
+use POSIX;
+use feature qw(switch);
+use Cwd qw();
+use File::Basename;
+
+# input arg
+my 
+  ( 
+    $path_makefile_action , 
+    $content_makefile_interim , 
+    $type_mk ,
+    @args_other 
+  ) = @ARGV;
+
+# record home path
+my $homePath = Cwd::cwd();
+
+# change current directory or not
+my $wdir = '.';
+
+# current folder manip
+chdir($wdir) or die "No such directory as \"$wdir\".\n";
+my $path = Cwd::cwd();
+print "pwd : $path\n";
+
+# obtain hierarchical subdir list
+my @list = (  );
+returnSubDirList_tests( '.' , '.' , \@list );
+# shift(@list);
+
+foreach my $h (@list)
+{
+  my @chunks = split( '/' , $h->{path} );
+  shift(@chunks);
+  $h->{path} = join( '/' , @chunks );
+  
+  if (1)
+  {
+    print "\n";
+    print "path : " , "\n";
+    print "  " , $h->{path} , "\n";
+    print "type : " , "\n";
+    print "  " , $h->{type} , "\n";
+    print "subfolders : " , "\n";
+    print "  " , join( "\n  " , @{$h->{subfolders}} ) , "\n";
+    print "files : " , "\n";
+    print "  " , join( "\n  " , @{$h->{files}} ) , "\n";
+  }
+}
+
+# print list
+# print "\n" , join( "\n" , @list ) , "\n";
+
+chdir($path);
+
+# generate files
+foreach my $h (@list) 
+{
+  chdir($h->{path});
+  
+  # ugly but artifacts linger of older code
+  if    ( $h->{type} eq 'FilesOnly' )
+  {
+    if ( $type_mk eq 'mex' ) { generate_folders_reserved($h); }
+    system( "cp -f $path_makefile_action ." );
+  }
+  elsif ( $h->{type} eq 'DirsOnly' )
+  {
+    open ( FILE , ">makefile" );
+    print FILE "include $content_makefile_interim";
+    close( FILE );
+  }
+  elsif ( $h->{type} eq 'Both' )
+  {
+    if ( $type_mk eq 'mex' ) { generate_folders_reserved($h); }
+    system( "cp -f $path_makefile_action ." );
+  }
+  else
+  {
+    if ( $type_mk eq 'mex' ) { generate_folders_reserved($h); }
+    system( "cp -f $path_makefile_action ." );
+  }
+  
+  chdir($path);
+}
+
+### sub
+sub generate_folders_reserved
+{
+  my ( $h , @args ) = @_;
+  
+  foreach my $file (@{$h->{files}})
+  {
+    my($filename, $dirs, $suffix) = fileparse( $file , qr/\.[^.]*/ );
+    my $dir_reserved = '_reserved_mex_'.$filename;
+    
+    system("mkdir $dir_reserved");
+  }
+}
+
+### sub
+sub returnSubDirList_tests {
+  my
+    (
+      $path ,
+      $subPath ,
+      $listRef
+    )
+    = @_;
+
+  # list of extensions
+  my @list_exts = ( '.C' , '.cc' , '.cp' , '.cpp' , '.CPP' , '.cxx' , '.c++' , '.c' );
+  
+  # other defines
+  my $dir_ignore = '_ignore';
+  
+  # get directory listing
+  my $root = $path.'/'.$subPath;
+  opendir my $dh, $root or die "$0: opendir: $!";
+  my @dirs = grep {-d "$root/$_" && ! /^\.{1,2}$/} readdir($dh);
+  # alphabetical sort
+  my @dirsSorted = sort { lc($a) cmp lc($b) } @dirs;
+  
+  my @dirsTMP = ();
+  for ( my $i=0 ; $i<$#dirsSorted+1 ; $i++ )
+  {
+    if
+    (
+      (
+        ( length($dirsSorted[$i]) >= length($dir_ignore) )
+        &&
+        ( substr( $dirsSorted[$i] , 0 , length($dir_ignore) ) eq $dir_ignore )
+      )
+      ||
+      ( index( $dirsSorted[$i] , "." ) == 0 )
+    )
+    {}
+    else
+    {
+      push @dirsTMP , $dirsSorted[$i];
+    }
+  }
+  @dirsSorted = @dirsTMP;
+  
+  # obtain files
+  my @files = ();
+  foreach my $ext ( @list_exts )
+  {
+    my @tmp = glob("$root/*$ext");
+    foreach my $t (@tmp)
+    {
+      my @a = split( '/' , $t );
+      push @files , pop(@a);
+    }
+  }
+  
+  # hash
+  my %tmp_h =
+    (
+      path       => "" ,
+      subfolders => [ "" ] ,
+      files      => [ "" ] ,
+      type       => ""
+    );
+    
+  push @{$listRef} , { %tmp_h };
+  my $h = ${$listRef}[$#{$listRef}];
+  
+  $h->{path}       = $root;
+  $h->{subfolders} = [ @dirsSorted ];
+  $h->{files}      = [ @files ];
+  
+  # set type
+  my $flag_recur = 0;
+  
+  if ( ( $#dirsSorted+1 <= 0 ) && ( $#files+1 <= 0 ) )
+  {
+    $h->{type} = "None";
+  }
+  elsif ( $#files+1 <= 0 )
+  {
+    $h->{type} = "DirsOnly";
+    $flag_recur = 1;
+  }
+  elsif ( $#dirsSorted+1 <= 0 )
+  {
+    $h->{type} = "FilesOnly";
+  }
+  else
+  {
+    $h->{type} = "Both";
+  }
+  
+  # recur
+  if ( $flag_recur )
+  {
+    foreach my $item (@dirsSorted) 
+    {
+      returnSubDirList_tests( $root , $item , $listRef );
+    }
+  }
+}

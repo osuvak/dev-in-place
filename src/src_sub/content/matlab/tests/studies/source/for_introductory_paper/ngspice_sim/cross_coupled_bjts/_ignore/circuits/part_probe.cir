@@ -1,0 +1,9 @@
+vil nc1ttt gnd sin(3 3 10k)
+ril nc1tt nc1ttt 10
+spr nc1t nc1tt nvscont gnd smodel
+vmcur nc1 nc1t dc 0
+
+vscont nvscont gnd pwl(0m 6 4m 6 4.1m 0)
+
+.model smodel vt=3
+ 

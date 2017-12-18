@@ -1,0 +1,310 @@
+#!/usr/bin/perl
+
+# /*
+#  * This file is part of the "dev_in_place" repository located at:
+#  * https://github.com/osuvak/dev_in_place
+#  * 
+#  * Copyright (C) 2017  Onder Suvak
+#  * 
+#  * For licensing information check the above url.
+#  * Please do not remove this header.
+#  * */
+
+use warnings;
+use strict;
+use Cwd qw();
+
+# record home path
+my $homePath = Cwd::cwd();
+
+# other defns
+my $dir_classes = '../../include/classes';
+my $dir_source  = 'source';
+
+# change current directory or not
+my $wdir = '.';
+# if ( $#ARGV+1 >= 1 ) {
+#   $wdir = $ARGV[0];
+# }
+
+# current folder manip
+chdir($wdir) or die "No such directory as \"$wdir\".\n";
+my $path = Cwd::cwd();
+print "pwd : $path\n";
+
+if ( (-e $dir_classes) && (-d $dir_classes) )
+{
+  chdir( $dir_classes );
+  $path = Cwd::cwd();
+}
+else
+{
+  die "There is no folder named \'$dir_classes\'.";
+}
+
+# obtain hierarchical subdir list
+my @list = (  );
+returnSubDirList_matlab_testers_classes( '.' , '.' , \@list );
+# shift(@list);
+
+foreach my $h (@list)
+{
+  my @chunks = split( '/' , $h->{path} );
+  shift(@chunks);
+  $h->{path} = join( '/' , @chunks );
+  
+  if (1)
+  {
+    print "\n";
+    print "path : " , "\n";
+    print "  " , $h->{path} , "\n";
+    print "subpackages : " , "\n";
+    print "  " , join( "\n  " , @{$h->{subpackages}} ) , "\n";
+  }
+}
+
+# print list
+# print "\n" , join( "\n" , @list ) , "\n";
+
+chdir($path);
+
+if ( (-e "$homePath/$dir_source") && (-d "$homePath/$dir_source") )
+{}
+else
+{
+  die "There is no folder named \'$homePath/$dir_source\'.";
+}
+
+# generate files
+foreach my $h (@list) 
+{
+  my $path_modif = $h->{path};
+  $path_modif =~ s/\+//gi;
+  print 
+    "Original Path : " , $h->{path}  , "\n" ,
+    "Modified Path : " , $path_modif , "\n" ;
+  
+  if (1)
+  {
+    chdir( "$homePath/$dir_source" );
+    system("mkdir -p $path_modif");
+    chdir ($path_modif);
+  
+    write_info_local( '.' , $h->{path} , $path_modif );
+  
+    open( FILE , ">alib.m" );
+    write_standard_alib();
+    close(FILE);
+  
+    chdir( "$homePath/$dir_source" );
+  }
+}
+
+### sub
+sub write_info_local
+{
+  my
+    (
+      $dir ,
+      $path ,
+      $path_modif ,
+      @args
+    ) = @_;
+  
+  open( FILE_INFO , ">$dir/info_local.m" );
+ 
+  print FILE_INFO "PATH_RELATIVE_FORWARD = \'$path\';" , "\n";
+  print FILE_INFO "PATH_RELATIVE_FORWARD_MODIF = \'$path_modif\';" , "\n";
+  print FILE_INFO "PATH_RELATIVE_REVERSE = ";
+  
+  print FILE_INFO "\'";
+  
+  my @chunks = split( '/' , $path );
+  my @temp = ();
+  for (my $i=0 ; $i<$#chunks+1-1 ; $i++)
+  {
+    push @temp , "..";
+  }
+  
+  print FILE_INFO join( '/' , @temp );
+  
+  print FILE_INFO "\';";
+  
+  close(FILE_INFO);
+}
+ 
+### sub
+sub write_standard_alib
+{
+my $message = <<'END_MESSAGE';
+function alib(varargin)
+
+%  choice - add to or remove from path
+if nargin <= 0
+    ch = 1;
+else
+    ch = varargin{1};
+end
+
+%  look for this one
+str = 'zzz_strange_folder_name';
+
+%  determine location
+here = pwd;
+
+flag = 0;
+cnt  = 0;
+while (flag <= 0)
+    chdir('..');
+    cnt = cnt + 1;
+    list = dir();
+    % for kk = 1:size(list,1)
+    for kk = 1:length(list)
+        lval = ( strcmpi( list(kk).name , str ) && ( list(kk).isdir == 1 ) );
+        if lval
+            flag = 1;
+            break;
+        end
+    end
+end
+
+chdir(here);
+
+%  go back, do the job, return
+here = pwd;
+ss = '';
+for kk = 1:cnt-1
+    ss = sprintf( '%s''..'',' , ss );
+end
+ss = sprintf( '%s''..''' , ss );
+eval( sprintf( 'chdir( fullfile(%s) );' , ss ) );
+chdir( fullfile('..','path_setting') );
+otools;
+alib(ch);
+chdir(here);
+
+end
+END_MESSAGE
+
+  print FILE $message;
+}
+
+### sub
+sub returnSubDirList_matlab_testers_classes {
+  my
+    (
+      $path ,
+      $subPath ,
+      $listRef ,
+      @args
+    ) = @_;
+
+  # list of extensions
+  my @list_exts = ( '.m' );
+  
+  # other defines
+  my $dir_ignore = '_ignore';
+  
+  # get directory listing
+  my $root = $path.'/'.$subPath;
+  opendir my $dh, $root or die "$0: opendir: $!";
+  my @dirs = grep {-d "$root/$_" && ! /^\.{1,2}$/} readdir($dh);
+  # alphabetical sort
+  my @dirsSorted = sort { lc($a) cmp lc($b) } @dirs;
+  
+  my @dirsTMP = ();
+  for ( my $i=0 ; $i<$#dirsSorted+1 ; $i++ )
+  {
+    if
+    (
+      (
+        ( length($dirsSorted[$i]) >= length($dir_ignore) )
+        &&
+        ( substr( $dirsSorted[$i] , 0 , length($dir_ignore) ) eq $dir_ignore )
+      )
+      ||
+      ( index( $dirsSorted[$i] , "." ) == 0 )
+    )
+    {}
+    else
+    {
+      push @dirsTMP , $dirsSorted[$i];
+    }
+  }
+  @dirsSorted = @dirsTMP;
+  
+  my @subpackages = ();
+  foreach my $item (@dirsSorted)
+  {
+    if ( '+' eq substr( $item , 0 , 1 ) )
+    {
+      push @subpackages , $item;
+    }
+  }
+
+  # obtain files
+  my @files = ();
+  foreach my $ext ( @list_exts )
+  {
+    my @tmp = glob("$root/*$ext");
+    foreach my $t (@tmp)
+    {
+      my @a = split( '/' , $t );
+      push @files , pop(@a);
+    }
+  }
+  
+  my $flag_recur = 1;
+  
+  # hash
+  my %tmp_h =
+    (
+      path       => "" ,
+      subfolders => [ "" ] ,
+      subpackages=> [ "" ] ,
+      files      => [ "" ] ,
+      type       => ""
+    );
+    
+  if ( $subPath eq '+tester_classes' )  
+  {
+    push @{$listRef} , { %tmp_h };
+    my $h = ${$listRef}[$#{$listRef}];
+  
+    $h->{path}       = $root;
+    $h->{subfolders} = [ @dirsSorted ];
+    $h->{subpackages}= [ @subpackages ];
+    $h->{files}      = [ @files ];
+    
+    $flag_recur = 0;
+  
+    # set type
+    if ( ( $#dirsSorted+1 <= 0 ) && ( $#files+1 <= 0 ) )
+    {
+      $h->{type} = "None";
+      if ( $flag_recur ) { $flag_recur = 0; }
+    }
+    elsif ( $#files+1 <= 0 )
+    {
+      $h->{type} = "DirsOnly";
+    }
+    elsif ( $#dirsSorted+1 <= 0 )
+    {
+      $h->{type} = "FilesOnly";
+      if ( $flag_recur ) { $flag_recur = 0; }
+    }
+    else
+    {
+      $h->{type} = "Both";
+    }
+  } # if
+  
+  # recur
+  if ( $flag_recur )
+  {
+    foreach my $item (@subpackages) 
+    {
+      returnSubDirList_matlab_testers_classes( $root , $item , $listRef );
+    }
+  }
+} # sub

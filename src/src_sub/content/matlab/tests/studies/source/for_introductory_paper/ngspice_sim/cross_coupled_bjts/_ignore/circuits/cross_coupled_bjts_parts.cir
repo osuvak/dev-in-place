@@ -1,0 +1,38 @@
+* cross coupled bjts
+
+.model BC107A   NPN(Is=7.049f Xti=3 Eg=1.11 Vaf=116.3 Bf=375.5 Ise=7.049f
++               Ne=1.281 Ikf=4.589 Nk=.5 Xtb=1.5 Br=2.611 Isc=121.7p Nc=1.865
++               Ikr=5.313 Rc=1.464 Cjc=5.38p Mjc=.329 Vjc=.6218 Fc=.5 Cje=11.5p
++               Mje=.2717 Vje=.5 Tr=10n Tf=451p Itf=6.194 Xtf=17.43 Vtf=10)
+
+vcc nvcc gnd dc 6
+*vcc nvcc gnd pwl( 0 2 8m 6 )
+
+.include part_vcont.cir
+
+rout1 nvcc nc1 1k
+rout2 nvcc nc2 1k
+
+r1 nvcont nb2 10k
+r2 nvcont nb1 10k
+
+c1 nc1 nb2 10n
+c2 nc2 nb1 10n
+
+q1 nc1 nb1 gnd BC107A
+q2 nc2 nb2 gnd BC107A
+
+.include part_probe.cir
+
+.include part_tran.cir
+
+.control
+
+*run
+
+*setplot tran1
+*plot v(nc1) v(nc2)
+
+.endc
+
+.end

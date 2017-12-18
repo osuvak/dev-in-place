@@ -1,0 +1,128 @@
+#!/usr/bin/perl
+
+# /*
+#  * This file is part of the "dev_in_place" repository located at:
+#  * https://github.com/osuvak/dev_in_place
+#  * 
+#  * Copyright (C) 2017  Onder Suvak
+#  * 
+#  * For licensing information check the above url.
+#  * Please do not remove this header.
+#  * */
+
+use warnings;
+use strict;
+
+use POSIX;
+use POSIX qw(strftime);
+use feature qw(switch);
+use Cwd qw();
+
+my $ch;
+my $flag_chosen = 0;
+
+my @array_obj = ();
+for( my $ii = 0 ; $ii < $#ARGV + 1 ; $ii++ )
+{
+  my @chunks = split( '/' , $ARGV[$ii] );
+  push @array_obj , pop( @chunks );
+}
+
+while (1)
+{
+  print "\n\n";
+  print "Which test would you like work on?";
+  print "\n\n";
+
+  if (0)
+  {}
+  else 
+  {  
+  #   my $len_width   = 80;
+    my $len_width   = `tput cols`;
+  
+    my $len_num     = 4;
+    my $len_num_dec = 1;
+    my $len_str_max = 0;
+    foreach my $obj (@array_obj)
+    {
+      if ( length($obj) > $len_str_max ) { $len_str_max = length($obj); }
+    }
+    my $no_cols = floor( $len_width / ( 1 + $len_num + $len_num_dec + $len_str_max ) );
+    my $no_rows = ceil( ($#array_obj + 1) / $no_cols );
+    my $no_rem  = ($#array_obj + 1) % $no_cols;
+  
+    my $no_rem_actual = $no_rem;
+    if ( $no_rem == 0 ) { $no_rem_actual = $no_cols; }
+  
+#   print "No of objects : " , $#array_obj + 1 , "\n";
+#   print "No of cols    : " , $no_cols , "\n";
+#   print "No of rows    : " , $no_rows , "\n";
+#   print "No of rem     : " , $no_rem , "\n";
+    print "\n";
+  
+    for ( my $ii = 0 ; $ii < $no_rows ; $ii++ )
+    {
+      my $no_cols_actual = $no_cols;
+      if ( ( $ii  >= $no_rows - 1 ) && ( $no_rem != 0 ) ) { $no_cols_actual = $no_rem; }
+      my $cnt;
+      for ( my $jj = 0 ; $jj < $no_cols_actual ; $jj++ )
+      {
+        if ( $jj <= 0 )
+        { $cnt = 1 + $ii; }
+        else
+        {
+          if ( $jj+1-1 <= $no_rem_actual )
+          {
+            $cnt += $no_rows;
+          }
+          else
+          {
+            $cnt += $no_rows - 1;
+          }
+        }
+        my $cnt_str;
+        eval "\$cnt_str = sprintf ( \"%${len_num}.${len_num_dec}d\", \$cnt );";
+        my $id_str = "  ".$array_obj[$cnt-1];
+        for ( my $kk = 0 ; $kk < $len_str_max - length($array_obj[$cnt-1]) ; $kk++ )
+        {
+          $id_str = $id_str." ";
+        }
+        print $cnt_str , $id_str;
+      }
+      print "\n";
+    }
+  } # if
+
+  print "\n";
+  
+  print "\nYour choice is ? (\"q\" to \"move on\") : ";
+  $ch = <STDIN>;
+  chomp($ch);
+  if ( $ch eq "q" ) {
+    print "Moving on.\n";
+#     die "I am dead.\n";
+    print "I am dead.\n";
+#     exit 1;
+    last;
+  }
+  
+  if ( ( int($ch) < 1 ) || ( int($ch) > ($#array_obj + 1) ) ) 
+  {
+    print "Bad value. Choose again.\n";
+  }
+  else 
+  {
+    $ch = int($ch);
+    $flag_chosen = 1;
+    last;
+  }
+  
+} # while
+
+if ( $flag_chosen )
+{
+  print "\n";
+  system("echo \"running $ARGV[$ch-1]\"");
+  system("$ARGV[$ch-1] 2>&1");
+}

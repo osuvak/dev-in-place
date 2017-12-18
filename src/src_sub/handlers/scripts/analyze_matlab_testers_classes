@@ -1,0 +1,284 @@
+#!/usr/bin/perl
+
+# /*
+#  * This file is part of the "dev_in_place" repository located at:
+#  * https://github.com/osuvak/dev_in_place
+#  * 
+#  * Copyright (C) 2017  Onder Suvak
+#  * 
+#  * For licensing information check the above url.
+#  * Please do not remove this header.
+#  * */
+
+use warnings;
+use strict;
+use POSIX;
+use POSIX qw(strftime);
+use feature qw(switch);
+use Cwd qw();
+use File::Basename;
+
+# defns
+my $file_info_local    = 'info_local.m';
+my $file_perl_to_matlab= 'perl_comm.m';
+my $dir_link_hierarchy = '../../../include/classes';
+
+# get data
+my $path = Cwd::cwd();
+
+open ( FILE , "<$file_info_local");
+my @lines = <FILE>;
+close( FILE );
+
+my $PATH_RELATIVE_FORWARD;
+my $PATH_RELATIVE_FORWARD_MODIF;
+my $PATH_RELATIVE_REVERSE;
+
+foreach my $ll (@lines)
+{
+  chomp( $ll );
+  eval ("\$$ll");
+}
+
+my @chunks = split( "/" , $PATH_RELATIVE_FORWARD_MODIF );
+shift @chunks;
+my $prefix_package = join( '.' , @chunks );
+
+print "\nPackage Prefix :\n  $prefix_package\n";
+
+chdir($path);
+chdir( "$PATH_RELATIVE_REVERSE/$dir_link_hierarchy/$PATH_RELATIVE_FORWARD" );
+my @classes_raw = glob("*");
+
+# analyze
+my @classes = ();
+foreach my $item (@classes_raw)
+{
+  if ( -e $item )
+  {
+    if ( -d $item )
+    {
+      if ( "\@" eq substr( $item , 0 , 1 ) )
+      {
+        push @classes , substr( $item , 1 );
+      }
+    }
+    else
+    {
+      my ($filename, $dirs, $suffix) = fileparse( $item , qr/\.[^.]*/ );
+      if ( '.m' eq $suffix ) { push @classes , $filename; }
+    }
+  }
+}
+
+chdir($path);
+
+@classes = sort { $a cmp $b } @classes;
+print "\nCandidate Classes :\n  " , join( "\n  " , @classes ) , "\n";
+
+# request
+my %tmp
+  =
+  (
+    string_class_ch  => "" ,
+    ch               => 0  ,
+    flag_usableComm  => 0
+  );
+  
+my @deduc;
+push @deduc , { %tmp };
+getLastChoice ( $deduc[0] );
+
+my $flag_existTests = 0;
+if ( 1 + $#classes > 0 ) 
+{ $flag_existTests = 1; }
+
+my $flag_chosen = 0;
+
+my $ch_site;
+my @array_obj = @classes;
+if ( $flag_existTests )
+{
+
+
+  while (1) 
+  {
+
+    print "\n\n";
+    print "Which test would you like work on?";
+    print "\n\n";
+
+    if (0)
+    {}
+    else 
+    {  
+    #   my $len_width   = 80;
+      my $len_width   = `tput cols`;
+  
+      my $len_num     = 4;
+      my $len_num_dec = 1;
+      my $len_str_max = 0;
+      foreach my $obj (@array_obj)
+      {
+        if ( length($obj) > $len_str_max ) { $len_str_max = length($obj); }
+      }
+      my $no_cols = floor( $len_width / ( 1 + $len_num + $len_num_dec + $len_str_max ) );
+      my $no_rows = ceil( ($#array_obj + 1) / $no_cols );
+      my $no_rem  = ($#array_obj + 1) % $no_cols;
+  
+      my $no_rem_actual = $no_rem;
+      if ( $no_rem == 0 ) { $no_rem_actual = $no_cols; }
+  
+#       print "No of objects : " , $#array_obj + 1 , "\n";
+#       print "No of cols    : " , $no_cols , "\n";
+#       print "No of rows    : " , $no_rows , "\n";
+#       print "No of rem     : " , $no_rem , "\n";
+#       print "\n";
+  
+      for ( my $ii = 0 ; $ii < $no_rows ; $ii++ )
+      {
+        my $no_cols_actual = $no_cols;
+        if ( ( $ii  >= $no_rows - 1 ) && ( $no_rem != 0 ) ) { $no_cols_actual = $no_rem; }
+        my $cnt;
+        for ( my $jj = 0 ; $jj < $no_cols_actual ; $jj++ )
+        {
+          if ( $jj <= 0 )
+          { $cnt = 1 + $ii; }
+          else
+          {
+            if ( $jj+1-1 <= $no_rem_actual )
+            {
+              $cnt += $no_rows;
+            }
+            else
+            {
+              $cnt += $no_rows - 1;
+            }
+          }
+          my $cnt_str;
+          eval "\$cnt_str = sprintf ( \"%${len_num}.${len_num_dec}d\", \$cnt );";
+          my $id_str = "  ".$array_obj[$cnt-1];
+          for ( my $kk = 0 ; $kk < $len_str_max - length($array_obj[$cnt-1]) ; $kk++ )
+          {
+            $id_str = $id_str." ";
+          }
+          print $cnt_str , $id_str;
+        }
+        print "\n";
+      }
+    } # if
+
+    print "\n";
+  
+    if ( $deduc[0]->{flag_usableComm} )
+    {
+      print "Your last choice was \"$deduc[0]->{ch}\" (\"$deduc[0]->{string_class_ch}\").\n";
+      if
+        (
+          ( ( $deduc[0]->{ch} >= 1 ) && ( $deduc[0]->{ch} <= $#array_obj + 1 ) )
+          &&
+          ( $array_obj[$deduc[0]->{ch} - 1] ne $deduc[0]->{string_class_ch} )
+        )
+      {
+        print "Note: \"$deduc[0]->{ch}\" now corresponds to \"$array_obj[$deduc[0]->{ch}-1]\".\n";
+      }
+    }
+    print "\nYour choice is ? (\"q\" to \"move on\" or blank for last) : ";
+    my $ch = <STDIN>;
+    chomp($ch);
+    if ( $ch eq "q" ) {
+      print "Moving on.\n";
+  #     die "I am dead.\n";
+      last;
+    }
+  
+    if ( $ch eq "" )
+    {
+  #     print "Here.\n";
+      $ch = $deduc[0]->{ch};
+    }
+  
+    if ( ( int($ch) < 1 ) || ( int($ch) > ($#array_obj + 1) ) ) 
+    {
+      print "Bad value. Choose again.\n";
+    }
+    else 
+    {
+      $ch_site = int($ch) - 1;
+      $flag_chosen = 1;
+      last;
+    }
+  } # while
+
+}
+else
+{
+  print "\nThere are no tests to choose from.\n";
+}
+
+my $string_class_ch = '';
+my $chTemp = 0;
+if ( $flag_existTests && $flag_chosen )
+{
+  $string_class_ch = $classes[$ch_site];
+  $chTemp = 1 + $ch_site;
+}
+
+# write
+my $message = <<"END_MESSAGE";
+stinfo = [];
+stinfo.flag_existTests = $flag_existTests;
+stinfo.flag_chosen     = $flag_chosen;
+stinfo.prefix_package  = \'$prefix_package\';
+stinfo.class_ch        = \'$string_class_ch\';
+
+\% \$flag_existTests = $flag_existTests;
+\% \$flag_chosen     = $flag_chosen;
+\% \$prefix_package  = \'$prefix_package\';
+\% \$string_class_ch = \'$string_class_ch\';
+\% \$ch              = $chTemp;
+END_MESSAGE
+
+open ( FILE , ">$file_perl_to_matlab" );
+print FILE $message;
+close( FILE );
+
+# sub
+sub getLastChoice
+{
+  my ( $hRef , @args ) = @_;
+  
+  $hRef->{flag_usableComm} = 0;
+  if ( (-e $file_perl_to_matlab) && !(-d $file_perl_to_matlab) )
+  {
+    open ( FILE , "<$file_perl_to_matlab" );
+    my @lines = <FILE>;
+    close( FILE );
+    
+    # define - local decla
+    my $flag_existTests = 0;
+    my $flag_chosen     = 0;
+    my $prefix_package ;
+    my $string_class_ch;
+    my $ch             ;
+    
+    foreach my $ll ( @lines )
+    {
+      chomp($ll);
+      next if ( length($ll) <= 0 );
+      my @chunks = split( /\s+/ , $ll );
+      if ( $chunks[0] eq "%" )
+      {
+        shift @chunks;
+        eval( join( " " , @chunks ) );
+      }
+    }
+    
+    if ( $flag_existTests && $flag_chosen )
+    {
+      $hRef->{string_class_ch} = $string_class_ch;
+      $hRef->{ch}              = $ch;
+      $hRef->{flag_usableComm} = 1;
+    }
+  } # if
+} #sub

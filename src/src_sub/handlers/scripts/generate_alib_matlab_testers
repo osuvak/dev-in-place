@@ -1,0 +1,249 @@
+#!/usr/bin/perl
+
+# /*
+#  * This file is part of the "dev_in_place" repository located at:
+#  * https://github.com/osuvak/dev_in_place
+#  * 
+#  * Copyright (C) 2017  Onder Suvak
+#  * 
+#  * For licensing information check the above url.
+#  * Please do not remove this header.
+#  * */
+
+use warnings;
+use strict;
+use Cwd qw();
+
+# use lib './.';
+
+# record home path
+my $homePath = Cwd::cwd();
+
+# change current directory or not
+my $wdir = '.';
+# if ( $#ARGV+1 >= 1 ) {
+#   $wdir = $ARGV[0];
+# }
+
+# current folder manip
+chdir($wdir) or die "No such directory as \"$wdir\".\n";
+my $path = Cwd::cwd();
+print "pwd : $path\n";
+
+# obtain hierarchical subdir list
+my @list = (  );
+returnSubDirList_matlab( '.' , '.' , \@list );
+shift(@list);
+
+foreach my $h (@list)
+{
+  my @chunks = split( '/' , $h->{path} );
+  shift(@chunks);
+  $h->{path} = join( '/' , @chunks );
+  
+  if (1)
+  {
+    print "\n";
+    print "path : " , "\n";
+    print "  " , $h->{path} , "\n";
+    print "type : " , "\n";
+    print "  " , $h->{type} , "\n";
+    print "subfolders : " , "\n";
+    print "  " , join( "\n  " , @{$h->{subfolders}} ) , "\n";
+    print "files : " , "\n";
+    print "  " , join( "\n  " , @{$h->{files}} ) , "\n";
+  }
+}
+
+# print list
+# print "\n" , join( "\n" , @list ) , "\n";
+
+chdir($path);
+
+# generate files
+foreach my $h (@list) 
+{
+  chdir($h->{path});
+  
+  # ugly but artifacts linger of older code
+  open( FILE , ">alib.m" );
+  if ( $h->{type} eq 'FilesOnly' )
+  {
+    write_standard_alib();
+  }
+  elsif ( $h->{type} eq 'DirsOnly' )
+  {
+    write_standard_alib();
+  }
+  elsif ( $h->{type} eq 'Both' )
+  {
+    write_standard_alib();
+  }
+  else
+  {
+    write_standard_alib();
+  }
+  close(FILE);
+  
+  chdir($path);
+}
+
+### sub
+sub write_standard_alib
+{
+my $message = <<'END_MESSAGE';
+function alib(varargin)
+
+%  choice - add to or remove from path
+if nargin <= 0
+    ch = 1;
+else
+    ch = varargin{1};
+end
+
+%  look for this one
+str = 'zzz_strange_folder_name';
+
+%  determine location
+here = pwd;
+
+flag = 0;
+cnt  = 0;
+while (flag <= 0)
+    chdir('..');
+    cnt = cnt + 1;
+    list = dir();
+    % for kk = 1:size(list,1)
+    for kk = 1:length(list)
+        lval = ( strcmpi( list(kk).name , str ) && ( list(kk).isdir == 1 ) );
+        if lval
+            flag = 1;
+            break;
+        end
+    end
+end
+
+chdir(here);
+
+%  go back, do the job, return
+here = pwd;
+ss = '';
+for kk = 1:cnt-1
+    ss = sprintf( '%s''..'',' , ss );
+end
+ss = sprintf( '%s''..''' , ss );
+eval( sprintf( 'chdir( fullfile(%s) );' , ss ) );
+chdir( fullfile('..','path_setting') );
+otools;
+alib(ch);
+chdir(here);
+
+end
+END_MESSAGE
+
+  print FILE $message;
+}
+
+### sub
+sub returnSubDirList_matlab {
+  my
+    (
+      $path ,
+      $subPath ,
+      $listRef
+    )
+    = @_;
+
+  # list of extensions
+  my @list_exts = ( '.m' );
+  
+  # other defines
+  my $dir_ignore = '_ignore';
+  
+  # get directory listing
+  my $root = $path.'/'.$subPath;
+  opendir my $dh, $root or die "$0: opendir: $!";
+  my @dirs = grep {-d "$root/$_" && ! /^\.{1,2}$/} readdir($dh);
+  # alphabetical sort
+  my @dirsSorted = sort { lc($a) cmp lc($b) } @dirs;
+  
+  my @dirsTMP = ();
+  for ( my $i=0 ; $i<$#dirsSorted+1 ; $i++ )
+  {
+    if
+    (
+      (
+        ( length($dirsSorted[$i]) >= length($dir_ignore) )
+        &&
+        ( substr( $dirsSorted[$i] , 0 , length($dir_ignore) ) eq $dir_ignore )
+      )
+      ||
+      ( index( $dirsSorted[$i] , "." ) == 0 )
+    )
+    {}
+    else
+    {
+      push @dirsTMP , $dirsSorted[$i];
+    }
+  }
+  @dirsSorted = @dirsTMP;
+
+  # obtain files
+  my @files = ();
+  foreach my $ext ( @list_exts )
+  {
+    my @tmp = glob("$root/*$ext");
+    foreach my $t (@tmp)
+    {
+      my @a = split( '/' , $t );
+      push @files , pop(@a);
+    }
+  }
+  
+  # hash
+  my %tmp_h =
+    (
+      path       => "" ,
+      subfolders => [ "" ] ,
+      files      => [ "" ] ,
+      type       => ""
+    );
+    
+  push @{$listRef} , { %tmp_h };
+  my $h = ${$listRef}[$#{$listRef}];
+  
+  $h->{path}       = $root;
+  $h->{subfolders} = [ @dirsSorted ];
+  $h->{files}      = [ @files ];
+  
+  # set type
+  my $flag_recur = 0;
+  
+  if ( ( $#dirsSorted+1 <= 0 ) && ( $#files+1 <= 0 ) )
+  {
+    $h->{type} = "None";
+  }
+  elsif ( $#files+1 <= 0 )
+  {
+    $h->{type} = "DirsOnly";
+    $flag_recur = 1;
+  }
+  elsif ( $#dirsSorted+1 <= 0 )
+  {
+    $h->{type} = "FilesOnly";
+  }
+  else
+  {
+    $h->{type} = "Both";
+    $flag_recur = 1;
+  }
+  
+  # recur
+  if ( $flag_recur )
+  {
+    foreach my $item (@dirsSorted) 
+    {
+      returnSubDirList_matlab( $root , $item , $listRef );
+    }
+  }
+}

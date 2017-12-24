@@ -8,5 +8,5 @@
 #  * Please do not remove this header.
 #  * */
 
-DIR_GLOBAL_BIN := $(HOME)/dev_in_place/bin
+DIR_GLOBAL_BIN := $(HOME)/dev_in_place/binaries
 DIR_GLOBAL_MEX := $(DIR_GLOBAL_BIN)/mex

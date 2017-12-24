@@ -1,8 +1,8 @@
 classdef ProbabilityDFComputerWAux < os_numerical_composite.tools.gpc.preliminaries.d_20171111_2028.ProbabilityDFComputer
 %{
 /*
- * This file is part of the "dev_in_place" repository located at:
- * https://github.com/osuvak/dev_in_place
+ * This file is part of the "dev-in-place" repository located at:
+ * https://github.com/osuvak/dev-in-place
  * 
  * Copyright (C) 2017  Onder Suvak
  * 

@@ -1,8 +1,8 @@
 function [ h_fig , h_plot , h_ca ] = plot_tran(vec_x,vec_y,flag_maximize)
 %{
 /*
- * This file is part of the "dev_in_place" repository located at:
- * https://github.com/osuvak/dev_in_place
+ * This file is part of the "dev-in-place" repository located at:
+ * https://github.com/osuvak/dev-in-place
  * 
  * Copyright (C) 2017  Onder Suvak
  * 

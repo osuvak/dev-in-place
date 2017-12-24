@@ -14,8 +14,8 @@ classdef fdtd_mex_test < os_numerical_composite.testers.d_20170204_2252.GenericT
 
 %{
 /*
- * This file is part of the "dev_in_place" repository located at:
- * https://github.com/osuvak/dev_in_place
+ * This file is part of the "dev-in-place" repository located at:
+ * https://github.com/osuvak/dev-in-place
  * 
  * Copyright (C) 2017  Onder Suvak
  * 

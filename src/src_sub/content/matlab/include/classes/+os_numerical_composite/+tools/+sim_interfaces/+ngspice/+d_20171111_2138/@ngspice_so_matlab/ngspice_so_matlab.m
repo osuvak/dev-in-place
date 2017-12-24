@@ -1,8 +1,8 @@
 classdef ngspice_so_matlab < handle
 %{
 /*
- * This file is part of the "dev_in_place" repository located at:
- * https://github.com/osuvak/dev_in_place
+ * This file is part of the "dev-in-place" repository located at:
+ * https://github.com/osuvak/dev-in-place
  * 
  * Copyright (C) 2017  Onder Suvak
  * 
@@ -49,4 +49,4 @@ classdef ngspice_so_matlab < handle
 
     end % methods
     
-end
+end

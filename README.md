@@ -7,7 +7,7 @@ Documentation will be forthcoming.
 
 ## Citing dev-in-place
 
-If a research group uses this framework in their research, I would like to kindly request them to cite the following.
+If a research group uses this framework, I would like to kindly request them to cite the following.
 
 In BibTeX format:
 

@@ -28,7 +28,8 @@ clean : force_look
 clearall : force_look
 	@echo ""
 	@echo "Clearing all subdirectories..."
-	@for d in $(DIRS); do cd $$d && rm -rf ./* && cd ..; done
+	@set -o pipefail -e; \
+	for d in $(DIRS); do cd $$d && rm -rf ./* && cd ..; done
 	@echo ""
 
 force_look :

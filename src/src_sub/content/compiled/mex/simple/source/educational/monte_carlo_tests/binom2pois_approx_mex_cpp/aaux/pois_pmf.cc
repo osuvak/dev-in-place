@@ -20,7 +20,7 @@
 #ifdef USE_MATLAB_API
 
 #include "mex.h"
-#include "matrix.h"
+// #include "matrix.h"
 
 #elif defined USE_GSL_LIB
 

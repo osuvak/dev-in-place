@@ -13,6 +13,8 @@ CC     := gcc
 CXX    := g++
 MEX    := mex
 
+OCTAVE_MEX := mkoctfile --mex
+
 AR      := ar
 ARFLAGS := crvs
 
@@ -30,3 +32,8 @@ MEX_FLAGS  := \
 	LDFLAGS='$$LDFLAGS $(LDFLAGS) -fopenmp' \
 	LDCXXFLAGS='$$LDCXXFLAGS $(LDCXXFLAGS) -fopenmp' \
 	COMPFLAGS='$$COMPFLAGS /openmp'
+	
+OCTAVE_MEX_CFLAGS     := "-fexceptions -fPIC -fno-omit-frame-pointer -pthread $(CFLAGS) -fopenmp"
+OCTAVE_MEX_CXXFLAGS   := "-ansi -D_GNU_SOURCE -fPIC -fno-omit-frame-pointer -pthread $(CXXFLAGS) -fopenmp"
+OCTAVE_MEX_LDFLAGS    := "$(LDFLAGS) -fopenmp"
+OCTAVE_MEX_LDCXXFLAGS := "$(LDCXXFLAGS) -fopenmp"

@@ -13,7 +13,7 @@
 #define MEX_ITPP_UTIL_HH_
 
 #include "mex.h"
-#include "matrix.h"
+// #include "matrix.h"
 
 #include <math.h> 
 

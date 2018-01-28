@@ -12,7 +12,7 @@
 #define BINOM2POIS_MEX2MATLAB_HH_
 
 #include "mex.h"
-#include "matrix.h"
+// #include "matrix.h"
 
 #include "test_actual/results_container.hh"
 

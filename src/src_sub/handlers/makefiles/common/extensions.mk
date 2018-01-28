@@ -11,6 +11,8 @@
 LIST_EXTS_LANG_CPP := C cc cp cpp CPP cxx c++
 LIST_EXTS_LANG_C   := c
 
+EXT_MEX_OCTAVE := mex
+
 EXT_MEX_32 := mexglx
 EXT_MEX_64 := mexa64
 

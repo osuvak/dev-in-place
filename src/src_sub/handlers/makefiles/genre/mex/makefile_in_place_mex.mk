@@ -19,6 +19,7 @@ DIR_ALL_RAW := $(patsubst %/,%,$(DIR_ALL_RAW))
 DIR_ALL_RAW := $(notdir $(DIR_ALL_RAW))
 
 DIR_ELIMINATED := $(sort $(dir $(wildcard ./_ignore*/)))
+DIR_ELIMINATED += $(sort $(dir $(wildcard ./_reserved_mex*/)))
 DIR_ELIMINATED := $(filter-out ./,$(DIR_ELIMINATED))
 DIR_ELIMINATED := $(patsubst %/,%,$(DIR_ELIMINATED))
 DIR_ELIMINATED := $(notdir $(DIR_ELIMINATED))
@@ -41,7 +42,7 @@ define obtain_src_topmost
 SRC += $$(wildcard $$(DIR_SRC)/*.$1)
 endef
 
-define mex_compile_link_BadSolution
+define matlab_mex_compile_link_BadSolution
 $$(DIR_TARGET)/%.$$(EXT_MEX) : $$(DIR_SRC)/%.${1} force_look
 #
 	TGT_LOADED="$$*" && \
@@ -51,7 +52,7 @@ $$(DIR_TARGET)/%.$$(EXT_MEX) : $$(DIR_SRC)/%.${1} force_look
 		echo $$* && \
 		echo $$$$TGT_LOADED && \
 		echo $$$$DIR_MEX_RESERVED && \
-	$$(HOME)/dev_in_place/scripts/generate_mex_loader_internals "$$(DIR_GLOBAL_MEX)" "$$*" "$$(EXT_MEX)" && \
+	$$(HOME)/dev_in_place/scripts/generate_mex_loader_internals "$$(DIR_GLOBAL_MEX_MATLAB)" "$$*" "$$(EXT_MEX)" && \
 	$$(MEX) \
 		CC=$$(CXX) CXX=$$(CXX) LD=$$(CXX) \
 		-v -g -largeArrayDims \
@@ -78,6 +79,41 @@ $$(DIR_TARGET)/%.$$(EXT_MEX) : $$(DIR_SRC)/%.${1} force_look
 	patchelf --set-rpath "$$(PATH_LINK)" $$(DIR_TARGET)/$$$$TGT_LOADED.$$(EXT_MEX)
 endef
 
+define octave_mex_compile_link_BadSolution
+$$(DIR_TARGET)/%.$$(EXT_MEX_OCTAVE) : $$(DIR_SRC)/%.${1} force_look
+#
+	TGT_LOADED="$$*" && \
+		TGT_LOADED+="_Loaded" && \
+		DIR_MEX_RESERVED="_reserved_mex_" && \
+		DIR_MEX_RESERVED+="$$*" && \
+		echo $$* && \
+		echo $$$$TGT_LOADED && \
+		echo $$$$DIR_MEX_RESERVED && \
+	$$(HOME)/dev_in_place/scripts/generate_mex_loader_internals "$$(DIR_GLOBAL_MEX_OCTAVE)" "$$*" "$$(EXT_MEX_OCTAVE)" && \
+	export CC=$$(CC) && \
+	export CXX=$$(CXX) && \
+	export CFLAGS=$$(OCTAVE_MEX_CFLAGS) && \
+	export CXXFLAGS=$$(OCTAVE_MEX_CXXFLAGS) && \
+	export LDFLAGS=$$(OCTAVE_MEX_LDFLAGS) && \
+	$$(OCTAVE_MEX) \
+		--output $$(DIR_TARGET)/$$* \
+		$$(DIR_SRC)/$$$$DIR_MEX_RESERVED/mex_loader.cpp \
+		$$(DIR_SRC)/$$$$DIR_MEX_RESERVED/mex_main.cpp \
+		-I. \
+		-I$$(HOME)/dev_in_place/code_aux/cpp/double_layer_mex/h_20150709_1718 \
+		-ldl && \
+	$$(OCTAVE_MEX) \
+		--output $$(DIR_TARGET)/$$$$TGT_LOADED \
+		$$< \
+		$$(SRC_SUBDIR) \
+		-I. \
+		$$(DEP_INCLUDE_SUBDIR) \
+		$$(DEP_INCLUDE) \
+		$$(DEP_LINK)  && \
+	patchelf --set-rpath "$$(PATH_LINK)" $$(DIR_TARGET)/$$$$TGT_LOADED.$$(EXT_MEX_OCTAVE) && \
+	find . -name "*.o" -type f -exec rm -rf {} \;
+endef
+
 # extensions
 LIST_EXTS := $(LIST_EXTS_LANG_CPP) $(LIST_EXTS_LANG_C)
 
@@ -97,11 +133,24 @@ SRC :=
 $(foreach EXT,$(LIST_EXTS),$(eval $(call obtain_src_topmost,$(EXT))))
 
 # collect all targets
-ALL_TGT_MEX        :=     $(addprefix $(DIR_TARGET)/,$(addsuffix .$(EXT_MEX),$(basename $(notdir $(SRC)))))
-ALL_TGT_MEX_GLOBAL := $(addprefix $(DIR_GLOBAL_MEX)/,$(addsuffix .$(EXT_MEX),$(basename $(notdir $(SRC)))))
+ALL_TGT_MEX        :=
+ALL_TGT_MEX_GLOBAL :=
+ALL_TGT_MEX_LOADED        :=
+ALL_TGT_MEX_LOADED_GLOBAL :=
 
-ALL_TGT_MEX_LOADED        :=     $(addprefix $(DIR_TARGET)/,$(addsuffix _Loaded.$(EXT_MEX),$(basename $(notdir $(SRC)))))
-ALL_TGT_MEX_LOADED_GLOBAL := $(addprefix $(DIR_GLOBAL_MEX)/,$(addsuffix _Loaded.$(EXT_MEX),$(basename $(notdir $(SRC)))))
+ifeq ($(FLAG_BUILD_MEX_MATLAB),1)
+  ALL_TGT_MEX        +=     $(addprefix $(DIR_TARGET)/,$(addsuffix .$(EXT_MEX),$(basename $(notdir $(SRC)))))
+  ALL_TGT_MEX_GLOBAL += $(addprefix $(DIR_GLOBAL_MEX_MATLAB)/,$(addsuffix .$(EXT_MEX),$(basename $(notdir $(SRC)))))
+  ALL_TGT_MEX_LOADED        +=     $(addprefix $(DIR_TARGET)/,$(addsuffix _Loaded.$(EXT_MEX),$(basename $(notdir $(SRC)))))
+  ALL_TGT_MEX_LOADED_GLOBAL += $(addprefix $(DIR_GLOBAL_MEX_MATLAB)/,$(addsuffix _Loaded.$(EXT_MEX),$(basename $(notdir $(SRC)))))
+endif
+
+ifeq ($(FLAG_BUILD_MEX_OCTAVE),1)
+  ALL_TGT_MEX        +=     $(addprefix $(DIR_TARGET)/,$(addsuffix .$(EXT_MEX_OCTAVE),$(basename $(notdir $(SRC)))))
+  ALL_TGT_MEX_GLOBAL += $(addprefix $(DIR_GLOBAL_MEX_OCTAVE)/,$(addsuffix .$(EXT_MEX_OCTAVE),$(basename $(notdir $(SRC)))))
+  ALL_TGT_MEX_LOADED        +=     $(addprefix $(DIR_TARGET)/,$(addsuffix _Loaded.$(EXT_MEX_OCTAVE),$(basename $(notdir $(SRC)))))
+  ALL_TGT_MEX_LOADED_GLOBAL += $(addprefix $(DIR_GLOBAL_MEX_OCTAVE)/,$(addsuffix _Loaded.$(EXT_MEX_OCTAVE),$(basename $(notdir $(SRC)))))
+endif
 
 # Recipes below
 
@@ -122,13 +171,20 @@ reportall : force_look
 mkdirtarget : clean force_look
 	@mkdir -p $(DIR_TARGET)
 	
-$(foreach EXT,$(LIST_EXTS),$(eval $(call mex_compile_link_BadSolution,$(EXT))))
+$(foreach EXT,$(LIST_EXTS),$(eval $(call matlab_mex_compile_link_BadSolution,$(EXT))))
+$(foreach EXT,$(LIST_EXTS),$(eval $(call octave_mex_compile_link_BadSolution,$(EXT))))
 
-cptargets : force_look
-	@cp $(DIR_TARGET)/* $(DIR_GLOBAL_MEX)/. 2>/dev/null || true
+cptargets : mkdirglobal force_look
+	@cp $(DIR_TARGET)/*.$(EXT_MEX)        $(DIR_GLOBAL_MEX_MATLAB)/. 2>/dev/null || true
+	@cp $(DIR_TARGET)/*.$(EXT_MEX_OCTAVE) $(DIR_GLOBAL_MEX_OCTAVE)/. 2>/dev/null || true
+	
+mkdirglobal : force_look
+	@mkdir -p $(DIR_GLOBAL_MEX_MATLAB);
+	@mkdir -p $(DIR_GLOBAL_MEX_OCTAVE);
 
-realclean : clean force_look
-	@mkdir -p $(DIR_GLOBAL_MEX); cd $(DIR_GLOBAL_MEX); rm -rf ./*
+realclean : mkdirglobal clean force_look
+	@cd $(DIR_GLOBAL_MEX_MATLAB); rm -rf ./*
+	@cd $(DIR_GLOBAL_MEX_OCTAVE); rm -rf ./*
 
 allclean :  clean force_look
 	@rm -f $(ALL_TGT_MEX_GLOBAL)
@@ -138,6 +194,7 @@ clean : force_look
 # 	@rm -f $(ALL_TGT_MEX)
 	@mkdir -p $(DIR_TARGET)
 	@cd $(DIR_TARGET); rm -rf ./*
+	@find . -name "*.o" -type f -exec rm -rf {} \;
 	
 include $(HOME)/dev_in_place/makefiles/assigner/makefile_lowermost_kdev.mk
 	

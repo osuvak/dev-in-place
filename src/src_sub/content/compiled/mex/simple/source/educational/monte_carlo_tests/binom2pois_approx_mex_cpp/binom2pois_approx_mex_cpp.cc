@@ -9,7 +9,7 @@
  * */
 
 #include "mex.h"
-#include "matrix.h"
+// #include "matrix.h"
 
 #include "binom2pois_approx.hh"
 #include "pois_pmf.hh"

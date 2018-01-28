@@ -46,6 +46,11 @@ if (
       (-d $path_reserved_mex) 
    )
 {
+  # erase everything in reserved dir - due to a bug
+  chdir( $path );
+  chdir( $path_reserved_mex );
+  system( "rm -rf ./*" );
+  chdir( $path );
 }
 else
 {

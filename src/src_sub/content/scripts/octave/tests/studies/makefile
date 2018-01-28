@@ -8,13 +8,4 @@
 #  * Please do not remove this header.
 #  * */
 
-# paths
-DIR_GLOBAL_BIN := $(HOME)/dev_in_place/binaries
-DIR_GLOBAL_MEX := $(DIR_GLOBAL_BIN)/mex
-
-DIR_GLOBAL_MEX_MATLAB := $(DIR_GLOBAL_MEX)/matlab
-DIR_GLOBAL_MEX_OCTAVE := $(DIR_GLOBAL_MEX)/octave
-
-# flags
-FLAG_BUILD_MEX_MATLAB := 1
-FLAG_BUILD_MEX_OCTAVE := 1
+include $(HOME)/dev_in_place/makefiles/genre/matlab/regular/makefile_topmost_matlab_testers.mk

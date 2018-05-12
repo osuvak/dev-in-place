@@ -46,7 +46,8 @@ relocatemakefiles : force_look
 		$(HOME)/dev_in_place/scripts/generate_makefiles_tests_mex \
 			$(COPIED_MAKEFILE) \
 			$(CONTENT_MAKEFILE_INTERIM) \
-			$(TYPE_MK) && \
+			$(TYPE_MK) \
+			$(FILE_MK) && \
 		cd ..; \
 	done
 

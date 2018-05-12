@@ -23,6 +23,7 @@ my
     $path_makefile_action , 
     $content_makefile_interim , 
     $type_mk ,
+    $file_mk ,
     @args_other 
   ) = @ARGV;
 
@@ -76,7 +77,7 @@ foreach my $h (@list)
   if    ( $h->{type} eq 'FilesOnly' )
   {
     if ( $type_mk eq 'mex' ) { generate_folders_reserved($h); }
-    system( "cp -f $path_makefile_action ." );
+    generate_makefile_action();
   }
   elsif ( $h->{type} eq 'DirsOnly' )
   {
@@ -87,12 +88,12 @@ foreach my $h (@list)
   elsif ( $h->{type} eq 'Both' )
   {
     if ( $type_mk eq 'mex' ) { generate_folders_reserved($h); }
-    system( "cp -f $path_makefile_action ." );
+    generate_makefile_action();
   }
   else
   {
     if ( $type_mk eq 'mex' ) { generate_folders_reserved($h); }
-    system( "cp -f $path_makefile_action ." );
+    generate_makefile_action();
   }
   
   chdir($path);
@@ -110,6 +111,17 @@ sub generate_folders_reserved
     
     system("mkdir $dir_reserved");
   }
+}
+
+### sub
+sub generate_makefile_action
+{
+  # use variables already defined in the nesting scope
+  open ( FILE , ">makefile" );
+  print FILE "include $path_makefile_action";
+  print FILE "\n";
+  print FILE "include $file_mk";
+  close( FILE );
 }
 
 ### sub

@@ -1,0 +1,140 @@
+#!/usr/bin/perl
+
+# /*
+#  * This file is part of the "dev-in-place" repository located at:
+#  * https://github.com/osuvak/dev-in-place
+#  * 
+#  * Copyright (C) 2017  Onder Suvak
+#  * 
+#  * For licensing information check the above url.
+#  * Please do not remove this header.
+#  * */
+
+use warnings;
+use strict;
+use Cwd qw();
+use File::Basename;
+
+# record home path
+my $homePath = Cwd::cwd();
+
+# other defns
+my @dirs_topmost = ( "mex" , "mex_interim" , "tests" );
+
+# hash tmp and AoH
+my %tmp 
+  =
+    (
+      type => "" ,
+      file => "" ,
+    );
+
+my @aoh = ();
+
+# use this hash for quick reference later in the iterations
+my %types = ();
+    
+# obtain list of available types
+my $dir_types   = $ARGV[0];
+my @files_types = glob( "$dir_types/*.mk" );
+my @lib_info_types = ();
+foreach my $ff (@files_types)
+{
+  my ($filename, $dirs, $suffix) = fileparse( $ff , qr/\.[^.]*/ );
+  push @lib_info_types , $filename;
+  
+  push @aoh , { %tmp };
+  $aoh[-1]->{type} = $filename;
+  $aoh[-1]->{file} = $ff;
+  
+  $types{$filename} = $aoh[-1];
+}
+my $string_types = join( "  " , @lib_info_types );
+
+# multiline strings
+my $content_makefile_topmost_genre = <<"END_MESSAGE";
+DIRS := $string_types
+
+include \$(HOME)/dev_in_place/makefiles/assigner/makefile_topmost_genre.mk
+END_MESSAGE
+
+# manage
+foreach my $dd (@dirs_topmost)
+{
+  # return to original path
+  chdir($homePath);
+
+  # do not bother if there is no such folder
+  next if ( !( (-e $dd) && (-d $dd) ) );
+
+  my $type;
+  my $makefile_genre;
+  
+  # specific
+  if ( ( $dd eq "mex" ) || ( $dd eq "mex_interim" ) )
+  {
+    $type = "mex";
+    $makefile_genre = "\$(HOME)/dev_in_place/makefiles/genre/mex/makefile_in_place_mex.mk";
+  }
+  elsif ( $dd eq "tests" )
+  {
+    $type = "test";
+    $makefile_genre = "\$(HOME)/dev_in_place/makefiles/genre/tests/makefile_in_place_tests.mk";
+  }
+  
+  # go into dir
+  chdir($dd);
+  my $dir_genre = Cwd::cwd();
+  
+  # write makefile
+  open ( FILE , ">makefile" );
+  print FILE $content_makefile_topmost_genre;
+  close( FILE );
+  
+  # foreach defined type
+  foreach my $tt (@lib_info_types)
+  {
+    chdir($dir_genre);
+    
+    # create if does not exist
+    if ( !( (-e $tt) && (-d $tt) ) )
+    {
+      system( "mkdir -p $tt/source/ttemp" );
+    }
+    
+    # go into dir
+    chdir($tt);
+    
+    # generate makefile
+    open ( FILE , ">makefile" );
+    print FILE generate_type_specific_string( $types{$tt}->{file} , $type , $makefile_genre );
+    close( FILE );
+  }
+  
+  chdir($dir_genre);
+} # foreach
+
+# return to original path
+chdir($homePath);
+
+sub generate_type_specific_string
+{
+  my
+    (
+      $copied_makefile ,
+      $type ,
+      $makefile_genre ,
+      @args
+    )
+    = @_;
+    
+my $content = <<"END_MESSAGE";
+COPIED_MAKEFILE := $copied_makefile
+TYPE_MK := $type
+FILE_MK := $makefile_genre
+
+include \$(HOME)/dev_in_place/makefiles/assigner/makefile_assigner.mk
+END_MESSAGE
+
+  return $content;
+}

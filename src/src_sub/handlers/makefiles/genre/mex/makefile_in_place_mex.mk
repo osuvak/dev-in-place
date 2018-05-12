@@ -42,7 +42,7 @@ define obtain_src_topmost
 SRC += $$(wildcard $$(DIR_SRC)/*.$1)
 endef
 
-define matlab_mex_compile_link_BadSolution
+define matlab_mex_compile_link
 $$(DIR_TARGET)/%.$$(EXT_MEX) : $$(DIR_SRC)/%.${1} force_look
 #
 	TGT_LOADED="$$*" && \
@@ -79,7 +79,7 @@ $$(DIR_TARGET)/%.$$(EXT_MEX) : $$(DIR_SRC)/%.${1} force_look
 	patchelf --set-rpath "$$(PATH_LINK)" $$(DIR_TARGET)/$$$$TGT_LOADED.$$(EXT_MEX)
 endef
 
-define octave_mex_compile_link_BadSolution
+define octave_mex_compile_link
 $$(DIR_TARGET)/%.$$(EXT_MEX_OCTAVE) : $$(DIR_SRC)/%.${1} force_look
 #
 	TGT_LOADED="$$*" && \
@@ -171,8 +171,8 @@ reportall : force_look
 mkdirtarget : clean force_look
 	@mkdir -p $(DIR_TARGET)
 	
-$(foreach EXT,$(LIST_EXTS),$(eval $(call matlab_mex_compile_link_BadSolution,$(EXT))))
-$(foreach EXT,$(LIST_EXTS),$(eval $(call octave_mex_compile_link_BadSolution,$(EXT))))
+$(foreach EXT,$(LIST_EXTS),$(eval $(call matlab_mex_compile_link,$(EXT))))
+$(foreach EXT,$(LIST_EXTS),$(eval $(call octave_mex_compile_link,$(EXT))))
 
 cptargets : mkdirglobal force_look
 	@cp $(DIR_TARGET)/*.$(EXT_MEX)        $(DIR_GLOBAL_MEX_MATLAB)/. 2>/dev/null || true

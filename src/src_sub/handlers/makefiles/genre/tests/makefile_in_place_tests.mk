@@ -28,31 +28,15 @@ OBJ += $$(OBJ_TEMP)
 EXE += $$(EXE_TEMP)
 endef
 
-define rule_compile_cpp
+define rule_compile
 $$(DIR_TARGET)/$2/%.${1}.$$(EXT_OBJ) : $$(DIR_SRC)/$2/%.$1
 	@echo ""
 	@echo "Source : $$<"
 	@echo "Target : $$@"
 	@echo ""
-	$$(CXX) $$(CXXFLAGS) \
+	${4} ${5} \
 		-MP -MMD \
-		-MT '$$(DIR_TARGET)/$2/$$*.${1}.$$(EXT_OBJ)' \
-		-MF $$(DIR_TARGET)/$2/$$*.${1}.$$(EXT_DEP) \
-		-I. \
-		$3 \
-		$$(DEP_INCLUDE) \
-		-c $$< -o $$@
-endef
-
-define rule_compile_c
-$$(DIR_TARGET)/$2/%.${1}.$$(EXT_OBJ) : $$(DIR_SRC)/$2/%.$1
-	@echo ""
-	@echo "Source : $$<"
-	@echo "Target : $$@"
-	@echo ""
-	$$(CC) $$(CFLAGS) \
-		-MP -MMD \
-		-MT '$$(DIR_TARGET)/$2/$$*.${1}.$$(EXT_OBJ)' \
+		-MT '$$@' \
 		-MF $$(DIR_TARGET)/$2/$$*.${1}.$$(EXT_DEP) \
 		-I. \
 		$3 \
@@ -179,28 +163,28 @@ $(DIR_TARGET)/./%.$(EXT_EXE) : $(DIR_TARGET)/./%.$(EXT_OBJ) $(OBJ_SUBDIR)
 	@echo ""
 	$(CXX) $(LDCXXFLAGS) \
 		-o $@ \
-		$(DIR_TARGET)/${*}.$(EXT_OBJ) \
+		$< \
 		$(OBJ_SUBDIR) \
 		$(DEP_LINK)
 	patchelf --set-rpath "$(PATH_LINK)" $@
-
+	
 $(foreach EXT,$(LIST_EXTS_LANG_CPP),\
-  $(eval $(call rule_compile_cpp,$(EXT),$(DIR_DOT),$(DEP_INCLUDE_SUBDIR)))\
+  $(eval $(call rule_compile,$(EXT),$(DIR_DOT),$(DEP_INCLUDE_SUBDIR),$(CXX),$(CXXFLAGS)))\
 )
 
 $(foreach EXT,$(LIST_EXTS_LANG_C),\
-  $(eval $(call rule_compile_c,$(EXT),$(DIR_DOT),$(DEP_INCLUDE_SUBDIR)))\
+  $(eval $(call rule_compile,$(EXT),$(DIR_DOT),$(DEP_INCLUDE_SUBDIR),$(CC),$(CFLAGS)))\
 )
   
 $(foreach D,$(DIRS),\
   $(foreach EXT,$(LIST_EXTS_LANG_CPP),\
-    $(eval $(call rule_compile_cpp,$(EXT),$(D),$(addprefix -I./,$(D))))\
+    $(eval $(call rule_compile,$(EXT),$(D),$(addprefix -I./,$(D)),$(CXX),$(CXXFLAGS)))\
   )\
 )
 
 $(foreach D,$(DIRS),\
   $(foreach EXT,$(LIST_EXTS_LANG_C),\
-    $(eval $(call rule_compile_c,$(EXT),$(D),$(addprefix -I./,$(D))))\
+    $(eval $(call rule_compile,$(EXT),$(D),$(addprefix -I./,$(D)),$(CC),$(CFLAGS)))\
   )\
 )
 

@@ -10,7 +10,6 @@
 
 include $(HOME)/dev_in_place/makefiles/common/commands_flags.mk
 include $(HOME)/dev_in_place/makefiles/common/extensions.mk
-include $(HOME)/dev_in_place/makefiles/common/paths.mk
 
 include $(HOME)/dev_in_place_content/lib_info/current.mk
 DIR_TYPES := $(HOME)/dev_in_place_content/lib_info/$(DIR_LIB_INFO_CURRENT)/types

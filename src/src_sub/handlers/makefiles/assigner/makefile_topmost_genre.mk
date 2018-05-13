@@ -10,7 +10,6 @@
 
 include $(HOME)/dev_in_place/makefiles/common/commands_flags.mk
 include $(HOME)/dev_in_place/makefiles/common/extensions.mk
-include $(HOME)/dev_in_place/makefiles/common/paths.mk
 
 default : build help force_look
 	@true;

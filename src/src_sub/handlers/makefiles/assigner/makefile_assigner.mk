@@ -10,21 +10,8 @@
 
 include $(HOME)/dev_in_place/makefiles/common/commands_flags.mk
 include $(HOME)/dev_in_place/makefiles/common/extensions.mk
-include $(HOME)/dev_in_place/makefiles/common/paths.mk
 
-# get list of directories
-DIR_ALL_RAW := $(sort $(dir $(wildcard ./*/)))
-DIR_ALL_RAW := $(filter-out ./,$(DIR_ALL_RAW))
-DIR_ALL_RAW := $(patsubst %/,%,$(DIR_ALL_RAW))
-DIR_ALL_RAW := $(notdir $(DIR_ALL_RAW))
-
-DIR_ELIMINATED := $(sort $(dir $(wildcard ./_ignore*/)))
-DIR_ELIMINATED := $(filter-out ./,$(DIR_ELIMINATED))
-DIR_ELIMINATED := $(patsubst %/,%,$(DIR_ELIMINATED))
-DIR_ELIMINATED := $(notdir $(DIR_ELIMINATED))
-
-DIR_ALL := $(filter-out $(DIR_ELIMINATED),$(DIR_ALL_RAW))
-DIRS    := $(DIR_ALL)
+include $(HOME)/dev_in_place/makefiles/assigner/makefile_auto_dirs_recog.mk
 
 # content - interim
 CONTENT_MAKEFILE_INTERIM := $(HOME)/dev_in_place/makefiles/assigner/makefile_interim.mk

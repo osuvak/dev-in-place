@@ -8,7 +8,7 @@
 #  * Please do not remove this header.
 #  * */
 
-DIRS := source
+DIRS := $(sort $(dir $(wildcard */)))
 
 all : geninfo help
 

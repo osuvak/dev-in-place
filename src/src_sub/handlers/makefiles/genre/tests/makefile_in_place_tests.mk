@@ -10,7 +10,6 @@
 
 include $(HOME)/dev_in_place/makefiles/common/commands_flags.mk
 include $(HOME)/dev_in_place/makefiles/common/extensions.mk
-include $(HOME)/dev_in_place/makefiles/common/paths.mk
 
 # defines
 define obtain_src_obj_subdir
@@ -48,21 +47,7 @@ define include_dependencies
 -include $$(wildcard $$(DIR_TARGET)/$2/*.${1}.$$(EXT_DEP))
 endef
 
-# get list of directories
-DIR_ALL_RAW := $(sort $(dir $(wildcard ./*/)))
-DIR_ALL_RAW := $(filter-out ./,$(DIR_ALL_RAW))
-DIR_ALL_RAW := $(patsubst %/,%,$(DIR_ALL_RAW))
-DIR_ALL_RAW := $(notdir $(DIR_ALL_RAW))
-
-DIR_ELIMINATED := $(sort $(dir $(wildcard ./_ignore*/)))
-DIR_ELIMINATED := $(filter-out ./,$(DIR_ELIMINATED))
-DIR_ELIMINATED := $(patsubst %/,%,$(DIR_ELIMINATED))
-DIR_ELIMINATED := $(notdir $(DIR_ELIMINATED))
-
-DIR_ALL := $(filter-out $(DIR_ELIMINATED),$(DIR_ALL_RAW))
-DIRS    := $(DIR_ALL)
-
-DIRS_DOTTED := $(addprefix ./,$(DIRS))
+include $(HOME)/dev_in_place/makefiles/assigner/makefile_auto_dirs_recog.mk
 
 # directories
 DIR_BLANK  :=

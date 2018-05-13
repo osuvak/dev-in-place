@@ -9,7 +9,7 @@
 #  * */
 
 # paths
-DIR_GLOBAL_BIN := $(HOME)/dev_in_place/binaries
+DIR_GLOBAL_BIN := $(HOME)/dev_in_place_content/binaries
 DIR_GLOBAL_MEX := $(DIR_GLOBAL_BIN)/mex
 
 DIR_GLOBAL_MEX_MATLAB := $(DIR_GLOBAL_MEX)/matlab

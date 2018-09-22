@@ -20,10 +20,10 @@ ARFLAGS := crvs
 
 MAKE    := make
  
-CFLAGS     := -fPIC -Wall -Wwrite-strings -Wno-strict-aliasing -Wno-unknown-pragmas -g3 -O0
+CFLAGS     := -fPIC -fopenmp -Wall -Wwrite-strings -Wno-strict-aliasing -Wno-unknown-pragmas -g3 -O0
 CXXFLAGS   := $(CFLAGS) -std=c++11
 
-LDFLAGS    := -fPIC -Wall -Wwrite-strings -Wno-strict-aliasing -Wno-unknown-pragmas -g3 -O0
+LDFLAGS    := -fPIC -fopenmp -Wall -Wwrite-strings -Wno-strict-aliasing -Wno-unknown-pragmas -g3 -O0
 LDCXXFLAGS := $(LDFLAGS) -std=c++11
 
 MEX_FLAGS  := \
